@@ -1,0 +1,16 @@
+# python
+__pycache__/
+
+# dataset
+data/
+
+# images
+*.jpg
+*.png
+*.jpeg
+!assets/
+
+# log
+*.out
+*.log
+
