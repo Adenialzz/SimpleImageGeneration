@@ -5,10 +5,10 @@ __pycache__/
 data/
 
 # images
-*.jpg
-*.png
-*.jpeg
-!assets/
+# *.jpg
+# *.png
+# *.jpeg
+# !assets/
 
 # log
 *.out
