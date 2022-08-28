@@ -14,3 +14,10 @@ data/
 *.out
 *.log
 
+# weights
+*.pt
+*.pth
+*.ckpt
+
+# results dir
+results/

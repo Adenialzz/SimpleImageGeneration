@@ -5,9 +5,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torchvision import utils as vutils
-from discriminator import Discriminator
-from lpips import LPIPS
-from vqgan import VQGAN
+from models.discriminator import Discriminator
+from models.lpips import LPIPS
+from models.vqgan import VQGAN
 from utils import load_data, weights_init
 
 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--perceptual-loss-factor', type=float, default=1., help='Weighting factor for perceptual loss.')
 
     args = parser.parse_args()
-    args.dataset_path = r"C:\Users\dome\datasets\flowers"
+    args.dataset_path = "/ssd1t/song/Datasets/TID2013/le256"
 
     train_vqgan = TrainVQGAN(args)
 
