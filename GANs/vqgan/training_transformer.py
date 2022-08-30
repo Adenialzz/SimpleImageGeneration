@@ -6,16 +6,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import utils as vutils
-from transformer import VQGANTransformer
+from models.transformer import VQGANTransformer
 from utils import load_data, plot_images
 
 
 class TrainTransformer:
     def __init__(self, args):
-        self.model = VQGANTransformer(args).to(device=args.device)
+        self.model = VQGANTransformer(args.latent_dim, args.image_channels, args.num_codebook_vectors, args.beta, args.sos_token, args.vqgan_checkpoint_path, args.pkeep, args.device).to(args.device)
         self.optim = self.configure_optimizers()
+        os.makedirs(os.path.join(args.output_path, "checkpoints"), exist_ok=True)
+        os.makedirs(os.path.join(args.output_path, "results"), exist_ok=True)
 
-        self.train(args)
+        # self.train(args)
 
     def configure_optimizers(self):
         decay, no_decay = set(), set()
@@ -48,7 +50,7 @@ class TrainTransformer:
         return optimizer
 
     def train(self, args):
-        train_dataset = load_data(args)
+        train_dataset = load_data(args.dataset_path, args.batch_size)
         for epoch in range(args.epochs):
             with tqdm(range(len(train_dataset))) as pbar:
                 for i, imgs in zip(pbar, train_dataset):
@@ -63,7 +65,7 @@ class TrainTransformer:
             log, sampled_imgs = self.model.log_images(imgs[0][None])
             vutils.save_image(sampled_imgs, os.path.join("results", f"transformer_{epoch}.jpg"), nrow=4)
             plot_images(log)
-            torch.save(self.model.state_dict(), os.path.join("checkpoints", f"transformer_{epoch}.pt"))
+            torch.save(self.model.state_dict(), os.path.join(args.output_path, "checkpoints", f"transformer_{epoch}.pt"))
 
 
 if __name__ == '__main__':
@@ -74,7 +76,8 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=0.25, help='Commitment loss scalar.')
     parser.add_argument('--image-channels', type=int, default=3, help='Number of channels of images.')
     parser.add_argument('--dataset-path', type=str, default='./data', help='Path to data.')
-    parser.add_argument('--checkpoint-path', type=str, default='./checkpoints/last_ckpt.pt', help='Path to checkpoint.')
+    parser.add_argument('--output-path', type=str)
+    parser.add_argument('--vqgan-checkpoint-path', type=str, default='./checkpoints/last_ckpt.pt', help='Path to checkpoint.')
     parser.add_argument('--device', type=str, default="cuda", help='Which device the training is on')
     parser.add_argument('--batch-size', type=int, default=20, help='Input batch size for training.')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs to train.')
@@ -90,9 +93,9 @@ if __name__ == '__main__':
     parser.add_argument('--sos-token', type=int, default=0, help='Start of Sentence token.')
 
     args = parser.parse_args()
-    args.dataset_path = r"C:\Users\dome\datasets\flowers"
-    args.checkpoint_path = r".\checkpoints\vqgan_last_ckpt.pt"
 
-    train_transformer = TrainTransformer(args)
+    print(args.vqgan_checkpoint_path)
+    trainer = TrainTransformer(args)
+    trainer.train(args)
 
 

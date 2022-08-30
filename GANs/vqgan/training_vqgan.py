@@ -1,4 +1,5 @@
 import os
+import os.path as osp
 import argparse
 from tqdm import tqdm
 import numpy as np
@@ -10,41 +11,35 @@ from models.lpips import LPIPS
 from models.vqgan import VQGAN
 from utils import load_data, weights_init
 
-
 class TrainVQGAN:
     def __init__(self, args):
-        self.vqgan = VQGAN(args).to(device=args.device)
-        self.discriminator = Discriminator(args).to(device=args.device)
+        self.vqgan = VQGAN(args.latent_dim, args.image_channels, args.num_codebook_vectors, args.beta).to(args.device)
+        self.discriminator = Discriminator(args.image_channels).to(args.device)
         self.discriminator.apply(weights_init)
-        self.perceptual_loss = LPIPS().eval().to(device=args.device)
-        self.opt_vq, self.opt_disc = self.configure_optimizers(args)
+        self.perceptual_loss = LPIPS().eval().to(args.device)
+        self.opt_vq, self.opt_disc = self.configure_optimizers(args.learning_rate, args.beta1, args.beta2)
 
-        self.prepare_training()
+        os.makedirs(osp.join(args.output_path, "results"), exist_ok=True)
+        os.makedirs(osp.join(args.output_path, "checkpoints"), exist_ok=True)
+        # self.train(args)
 
-        self.train(args)
-
-    def configure_optimizers(self, args):
-        lr = args.learning_rate
+    def configure_optimizers(self, learning_rate, beta1, beta2):
         opt_vq = torch.optim.Adam(
             list(self.vqgan.encoder.parameters()) +
             list(self.vqgan.decoder.parameters()) +
             list(self.vqgan.codebook.parameters()) +
             list(self.vqgan.quant_conv.parameters()) +
             list(self.vqgan.post_quant_conv.parameters()),
-            lr=lr, eps=1e-08, betas=(args.beta1, args.beta2)
+            lr=learning_rate, eps=1e-08, betas=(args.beta1, args.beta2)
         )
         opt_disc = torch.optim.Adam(self.discriminator.parameters(),
-                                    lr=lr, eps=1e-08, betas=(args.beta1, args.beta2))
+                                    lr=learning_rate, eps=1e-08, betas=(beta1, beta2))
 
         return opt_vq, opt_disc
 
-    @staticmethod
-    def prepare_training():
-        os.makedirs("results", exist_ok=True)
-        os.makedirs("checkpoints", exist_ok=True)
 
     def train(self, args):
-        train_dataset = load_data(args)
+        train_dataset = load_data(args.dataset_path, args.batch_size)
         steps_per_epoch = len(train_dataset)
         for epoch in range(args.epochs):
             with tqdm(range(len(train_dataset))) as pbar:
@@ -79,17 +74,18 @@ class TrainVQGAN:
                     self.opt_vq.step()
                     self.opt_disc.step()
 
-                    if i % 10 == 0:
+                    if i % 100 == 0:
                         with torch.no_grad():
                             real_fake_images = torch.cat((imgs[:4], decoded_images.add(1).mul(0.5)[:4]))
-                            vutils.save_image(real_fake_images, os.path.join("results", f"{epoch}_{i}.jpg"), nrow=4)
+                            vutils.save_image(real_fake_images, osp.join(args.output_path, "results", f"{epoch}_{i}.jpg"), nrow=4)
 
                     pbar.set_postfix(
                         VQ_Loss=np.round(vq_loss.cpu().detach().numpy().item(), 5),
                         GAN_Loss=np.round(gan_loss.cpu().detach().numpy().item(), 3)
                     )
                     pbar.update(0)
-                torch.save(self.vqgan.state_dict(), os.path.join("checkpoints", f"vqgan_epoch_{epoch}.pt"))
+
+                torch.save(self.vqgan.state_dict(), osp.join(args.output_path, "checkpoints", f"vqgan_epoch_{epoch}.pt"))
 
 
 if __name__ == '__main__':
@@ -100,6 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=0.25, help='Commitment loss scalar (default: 0.25)')
     parser.add_argument('--image-channels', type=int, default=3, help='Number of channels of images (default: 3)')
     parser.add_argument('--dataset-path', type=str, default='/data', help='Path to data (default: /data)')
+    parser.add_argument('--output-path', type=str, default='/media/song/vqgan_outputs', help='Path to outputs (default: /media/song/vqgan_outputs )')
     parser.add_argument('--device', type=str, default="cuda", help='Which device the training is on')
     parser.add_argument('--batch-size', type=int, default=6, help='Input batch size for training (default: 6)')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs to train (default: 50)')
@@ -110,11 +107,12 @@ if __name__ == '__main__':
     parser.add_argument('--disc-factor', type=float, default=1., help='')
     parser.add_argument('--rec-loss-factor', type=float, default=1., help='Weighting factor for reconstruction loss.')
     parser.add_argument('--perceptual-loss-factor', type=float, default=1., help='Weighting factor for perceptual loss.')
+    parser.add_argument('--log-path', type=str)
 
     args = parser.parse_args()
-    args.dataset_path = "/ssd1t/song/Datasets/TID2013/le256"
 
-    train_vqgan = TrainVQGAN(args)
+    trainer = TrainVQGAN(args)
+    trainer.train(args)
 
 
 

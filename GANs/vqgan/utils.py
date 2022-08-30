@@ -40,9 +40,9 @@ class ImagePaths(Dataset):
         return example
 
 
-def load_data(args):
-    train_data = ImagePaths(args.dataset_path, size=256)
-    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=False)
+def load_data(dataset_path, batch_size):
+    train_data = ImagePaths(dataset_path, size=256)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False)
     return train_loader
 
 

@@ -2,14 +2,13 @@ import torch
 import torch.nn as nn
 
 from .helper import ResidualBlock, NonLocalBlock, DownSampleBlock, UpSampleBlock, GroupNorm, Swish
-from .helper import ResidualBlock, NonLocalBlock, UpSampleBlock, GroupNorm, Swish
 
 class Codebook(nn.Module):
-    def __init__(self, args):
+    def __init__(self, num_codebook_vectors, latent_dim, beta):
         super(Codebook, self).__init__()
-        self.num_codebook_vectors = args.num_codebook_vectors
-        self.latent_dim = args.latent_dim
-        self.beta = args.beta
+        self.num_codebook_vectors = num_codebook_vectors
+        self.latent_dim = latent_dim
+        self.beta = beta
 
         self.embedding = nn.Embedding(self.num_codebook_vectors, self.latent_dim)
         self.embedding.weight.data.uniform_(-1.0 / self.num_codebook_vectors, 1.0 / self.num_codebook_vectors)
@@ -34,13 +33,13 @@ class Codebook(nn.Module):
         return z_q, min_encoding_indices, loss
 
 class Encoder(nn.Module):
-    def __init__(self, args):
+    def __init__(self, latent_dim, image_channels):
         super(Encoder, self).__init__()
         channels = [128, 128, 128, 256, 256, 512]
         attn_resolutions = [16]
         num_res_blocks = 2
         resolution = 256
-        layers = [nn.Conv2d(args.image_channels, channels[0], 3, 1, 1)]
+        layers = [nn.Conv2d(image_channels, channels[0], 3, 1, 1)]
         for i in range(len(channels)-1):
             in_channels = channels[i]
             out_channels = channels[i + 1]
@@ -57,7 +56,7 @@ class Encoder(nn.Module):
         layers.append(ResidualBlock(channels[-1], channels[-1]))
         layers.append(GroupNorm(channels[-1]))
         layers.append(Swish())
-        layers.append(nn.Conv2d(channels[-1], args.latent_dim, 3, 1, 1))
+        layers.append(nn.Conv2d(channels[-1], latent_dim, 3, 1, 1))
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -65,7 +64,7 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, args):
+    def __init__(self, latent_dim, image_channels):
         super(Decoder, self).__init__()
         channels = [512, 256, 256, 128, 128]
         attn_resolutions = [16]
@@ -73,7 +72,7 @@ class Decoder(nn.Module):
         resolution = 16
 
         in_channels = channels[0]
-        layers = [nn.Conv2d(args.latent_dim, in_channels, 3, 1, 1),
+        layers = [nn.Conv2d(latent_dim, in_channels, 3, 1, 1),
                   ResidualBlock(in_channels, in_channels),
                   NonLocalBlock(in_channels),
                   ResidualBlock(in_channels, in_channels)]
@@ -91,7 +90,7 @@ class Decoder(nn.Module):
 
         layers.append(GroupNorm(in_channels))
         layers.append(Swish())
-        layers.append(nn.Conv2d(in_channels, args.image_channels, 3, 1, 1))
+        layers.append(nn.Conv2d(in_channels, image_channels, 3, 1, 1))
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -99,13 +98,13 @@ class Decoder(nn.Module):
 
 
 class VQGAN(nn.Module):
-    def __init__(self, args):
+    def __init__(self, latent_dim, image_channels, num_codebook_vectors, beta):
         super(VQGAN, self).__init__()
-        self.encoder = Encoder(args).to(device=args.device)
-        self.decoder = Decoder(args).to(device=args.device)
-        self.codebook = Codebook(args).to(device=args.device)
-        self.quant_conv = nn.Conv2d(args.latent_dim, args.latent_dim, 1).to(device=args.device)
-        self.post_quant_conv = nn.Conv2d(args.latent_dim, args.latent_dim, 1).to(device=args.device)
+        self.encoder = Encoder(latent_dim, image_channels)
+        self.decoder = Decoder(latent_dim, image_channels)
+        self.codebook = Codebook(num_codebook_vectors, latent_dim, beta)
+        self.quant_conv = nn.Conv2d(latent_dim, latent_dim, 1)
+        self.post_quant_conv = nn.Conv2d(latent_dim, latent_dim, 1)
 
     def forward(self, imgs):
         encoded_images = self.encoder(imgs)

@@ -1,33 +1,32 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from mingpt import GPT
-from vqgan import VQGAN
+from .mingpt import GPT
+from .vqgan import VQGAN
 
 
 class VQGANTransformer(nn.Module):
-    def __init__(self, args):
+    def __init__(self, latent_dim, image_channels, num_codebook_vectors, beta, sos_token, vqgan_checkpoint_path, pkeep, device):
         super(VQGANTransformer, self).__init__()
 
-        self.sos_token = args.sos_token
-
-        self.vqgan = self.load_vqgan(args)
+        self.device = device
+        self.sos_token = sos_token
+        self.vqgan = self.load_vqgan(latent_dim, image_channels, num_codebook_vectors, beta, vqgan_checkpoint_path)
 
         transformer_config = {
-            "vocab_size": args.num_codebook_vectors,
+            "vocab_size": num_codebook_vectors,
             "block_size": 512,
             "n_layer": 24,
             "n_head": 16,
             "n_embd": 1024
         }
         self.transformer = GPT(**transformer_config)
-
-        self.pkeep = args.pkeep
+        self.pkeep = pkeep
 
     @staticmethod
-    def load_vqgan(args):
-        model = VQGAN(args)
-        model.load_checkpoint(args.checkpoint_path)
+    def load_vqgan(latent_dim, image_channels, num_codebook_vectors, beta, vqgan_checkpoint_path):
+        model = VQGAN(latent_dim, image_channels, num_codebook_vectors, beta)
+        model.load_checkpoint(vqgan_checkpoint_path)
         model = model.eval()
         return model
 
@@ -48,7 +47,7 @@ class VQGANTransformer(nn.Module):
         _, indices = self.encode_to_z(x)
 
         sos_tokens = torch.ones(x.shape[0], 1) * self.sos_token
-        sos_tokens = sos_tokens.long().to("cuda")
+        sos_tokens = sos_tokens.long().to(self.device)
 
         mask = torch.bernoulli(self.pkeep * torch.ones(indices.shape, device=indices.device))
         mask = mask.round().to(dtype=torch.int64)
@@ -96,7 +95,7 @@ class VQGANTransformer(nn.Module):
 
         _, indices = self.encode_to_z(x)
         sos_tokens = torch.ones(x.shape[0], 1) * self.sos_token
-        sos_tokens = sos_tokens.long().to("cuda")
+        sos_tokens = sos_tokens.long().to(self.device)
 
         start_indices = indices[:, :indices.shape[1] // 2]
         sample_indices = self.sample(start_indices, sos_tokens, steps=indices.shape[1] - start_indices.shape[1])
