@@ -22,5 +22,6 @@ self.class_bias = nn.Embedding(num_classes, out_channels)
 ```
 
 
-参考：[abarankab/ddpm](https://github.com/abarankab/DDPM)
+参考实现：[abarankab/ddpm](https://github.com/abarankab/DDPM)
+扩展实现：[Stability-AI/ddpm](https://github.com/Stability-AI/stablediffusion/blob/main/ldm/models/diffusion/ddpm.py)
 
