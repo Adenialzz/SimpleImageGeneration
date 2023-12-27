@@ -4,6 +4,9 @@ __pycache__/
 # dataset
 data/
 
+# mac
+.DS_Store
+
 # images
 # *.jpg
 # *.png
@@ -13,6 +16,7 @@ data/
 # log
 *.out
 *.log
+*logs*/
 
 # weights
 *.pt
@@ -20,4 +24,4 @@ data/
 *.ckpt
 
 # results dir
-results/
+*results*/
