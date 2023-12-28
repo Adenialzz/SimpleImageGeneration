@@ -2,12 +2,31 @@ import argparse
 import torchvision
 import torch.nn.functional as F
 
-from .unet import UNet
-from .diffusion import (
+import yaml
+import argparse
+
+from ddpm.unet import UNet
+from ddpm.transform import RescaleChannels
+from ddpm.diffusion import (
     GaussianDiffusion,
     generate_linear_schedule,
     generate_cosine_schedule,
 )
+
+def load_yaml(path):
+    with open(path, 'r') as f:
+        data = yaml.safe_load(f)
+    return data
+
+def dict2namespace(config):
+    namespace = argparse.Namespace()
+    for key, value in config.items():
+        if isinstance(value, dict):
+            new_value = dict2namespace(value)
+        else:
+            new_value = value
+        setattr(namespace, key, new_value)
+    return namespace
 
 
 def cycle(dl):
@@ -18,12 +37,10 @@ def cycle(dl):
         for data in dl:
             yield data
 
-def get_transform():
-    class RescaleChannels(object):  # 将像素值从范围 [0.0, 1.0] 转换为 [-1.0, 1.0]。这样做是为了使输入图像的值范围大致与标准高斯分布的范围相同。
-        def __call__(self, sample):
-            return 2 * sample - 1
+def build_transform(img_size):
 
     return torchvision.transforms.Compose([
+        torchvision.transforms.Resize(img_size),
         torchvision.transforms.ToTensor(),
         RescaleChannels(),
     ])
@@ -56,12 +73,18 @@ def add_dict_to_argparser(parser, default_dict):
         parser.add_argument(f"--{k}", default=v, type=v_type)
 
 
-def diffusion_defaults():
+def get_diffusion_defaults():
     defaults = dict(
+        img_channels=3,
+        img_size=32,
+
         num_timesteps=1000,
         schedule="linear",
         loss_type="l2",
         use_labels=False,
+        
+        num_samples=64,
+        n_rows = 8,
 
         base_channels=128,
         channel_mults=(1, 2, 2, 2),
@@ -82,7 +105,7 @@ def diffusion_defaults():
     return defaults
 
 
-def get_diffusion_from_args(args) -> GaussianDiffusion:
+def build_diffusion(args) -> GaussianDiffusion:
     activations = {
         "relu": F.relu,
         "mish": F.mish,
@@ -90,7 +113,7 @@ def get_diffusion_from_args(args) -> GaussianDiffusion:
     }
 
     model = UNet(
-        img_channels=3,
+        img_channels=args.img_channels,
 
         base_channels=args.base_channels,
         channel_mults=args.channel_mults,
@@ -114,7 +137,7 @@ def get_diffusion_from_args(args) -> GaussianDiffusion:
         )
 
     diffusion = GaussianDiffusion(
-        model, (32, 32), 3, 10,
+        model, (args.img_size, args.img_size), args.img_channels, None if not args.use_labels else 10,
         betas,
         ema_decay=args.ema_decay,
         ema_update_rate=args.ema_update_rate,

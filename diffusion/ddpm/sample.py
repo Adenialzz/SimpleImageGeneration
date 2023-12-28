@@ -2,7 +2,12 @@ import os
 import torch
 import argparse
 import torchvision
-from ddpm.script_utils import diffusion_defaults, add_dict_to_argparser, get_diffusion_from_args
+from PIL import Image
+from diffusion.ddpm.utils import diffusion_defaults, add_dict_to_argparser, get_diffusion_from_args
+
+def make_and_save_gif(frames_list, out_name='test.gif'):
+    frame_one = frames_list[0]
+    frame_one.save(out_name, format="GIF", append_images=frames_list, save_all=True, duration=100, loop=0)
 
 def create_argparser():
     defaults = dict(num_images=100, device='cuda:1')
@@ -11,6 +16,7 @@ def create_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str)
     parser.add_argument("--save_dir", type=str)
+    parser.add_argument("--viz_process", action='store_true', default=False)
     add_dict_to_argparser(parser, defaults)
     return parser
 
@@ -22,23 +28,33 @@ def main():
         state_dict =  torch.load(args.model_path, map_location='cpu')
         diffusion.load_state_dict(state_dict)
         
+        frames_list = []
         if args.use_labels:
             images_per_class = args.num_images // 10
             for label in range(10):
                 y = torch.ones(images_per_class, dtype=torch.long, device=args.device) * label
-                samples = diffusion.sample(images_per_class, args.device, y=y)
-                
-                for image_id in range(len(samples)):
-                    image = ((samples[image_id] + 1) / 2).clip(0, 1)
-                    torchvision.utils.save_image(image, f"{args.save_dir}/{label}-{image_id}.png")
+                samples_processes = diffusion.sample_diffusion_sequence(images_per_class, args.device, y=y)
+                for process in samples_processes:
+                    grid_sample = torchvision.utils.make_grid(process, nrow=4)
+                    ndarr = grid_sample.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
+                    img = Image.fromarray(ndarr)
+                    frames_list.append(img)
+                make_and_save_gif(frames_list, 'sample_process.gif')
+                frames_list[-1].save("sample_results.png")
         else:
-            samples = diffusion.sample(args.num_images, args.device)
-
-            for image_id in range(len(samples)):
-                image = ((samples[image_id] + 1) / 2).clip(0, 1)
-                torchvision.utils.save_image(image, f"{args.save_dir}/{image_id}.png")
+            samples_processes = diffusion.sample_diffusion_sequence(args.num_images, args.device, y=None)
+            for process in samples_processes:
+                grid_sample = torchvision.utils.make_grid(process, nrow=4)
+                ndarr = grid_sample.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
+                img = Image.fromarray(ndarr)
+                frames_list.append(img)
+            make_and_save_gif(frames_list, 'sample_process.gif')
+            frames_list[-1].save("sample_results.png")
     except KeyboardInterrupt:
         print("Keyboard interrupt, generation finished early")
                 
 if __name__ == '__main__':
     main()
+    
+from PIL import Image
+reshaped_array = None

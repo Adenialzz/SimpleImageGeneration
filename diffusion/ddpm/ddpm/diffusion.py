@@ -5,6 +5,7 @@ import numpy as np
 from functools import partial
 from copy import deepcopy
 from .ema import EMA
+from .transform import UnrescaleChannels
 
 # 用于从一系列值a（如 \alpha_{1...T}）中取第t个值
 def extract(a, t, x_shape):
@@ -44,6 +45,7 @@ class GaussianDiffusion(nn.Module):
         self.img_size = img_size
         self.img_channels = img_channels
         self.num_classes = num_classes
+        self.post_process = UnrescaleChannels()
 
         if loss_type not in ["l1", "l2"]:
             raise ValueError("__init__() got unknown loss type")
@@ -101,7 +103,7 @@ class GaussianDiffusion(nn.Module):
                 # 这里的标准差 \sigma = \sqrt{\beta_t}，好像少了个系数呢？？？？ 不过好像这里的系数本来就不一定是固定的，参考 DDIM
                 x += extract(self.sigma, t_batch, x.shape) * torch.randn_like(x)
         
-        return x.cpu().detach()
+        return self.post_process(x.cpu().detach())
 
     @torch.no_grad()
     def sample_diffusion_sequence(self, batch_size, device, y=None, use_ema=True):
@@ -113,15 +115,15 @@ class GaussianDiffusion(nn.Module):
         diffusion_sequence = [x.cpu().detach()]
         
         for t in range(self.num_timesteps - 1, -1, -1):
-            t_batch = torch.tensor([t], device=device)
+            t_batch = torch.tensor([t], device=device).repeat(batch_size)
             x = self.remove_noise(x, t_batch, y, use_ema)
             
             if t > 0:
                 x += extract(self.sigma, t_batch, x.shape) * torch.randn_like(x)
             
-            diffusion_sequence.append(x)
+            diffusion_sequence.append(self.post_process(x.cpu().detach()))
             
-        return x.cpu().detach()
+        return diffusion_sequence
     
     def perturb_x(self, x_0, t, noise):
         # 这里的变量名x，我改成x_0了

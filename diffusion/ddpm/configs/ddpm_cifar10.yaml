@@ -1,0 +1,47 @@
+
+config:
+  project_name: ddpm
+  log_to: tensorboard
+  log_dir: logs/ddpm_cifar10_logs
+  device: cuda
+  
+  eval_freq: 1000
+  checkpoint_freq: 1000
+  model_checkpoint: null
+  optim_checkpoint: null
+
+data:
+  data_root: ./data/cifar
+  dataset: CIFAR10
+  img_size: 32
+  img_channels: 3
+  log_to: tensorboard
+
+training:
+  lr: 0.0002
+  batch_size: 256
+  iterations: 800000
+    
+sampling:
+  num_samples: 16
+  n_rows: 4
+
+
+diffusion: 
+  base_channels: 128
+  channel_mults: [1, 2, 2, 2]
+  num_res_blocks: 2
+  time_emb_dim: 512
+  norm: gn
+  dropout: 0.1
+  activation: silu
+  attention_resolutions: [1, ]
+  schedule: linear
+  num_timesteps: 1000
+  schedule_low: 0.0001
+  schedule_high: 0.02
+  use_labels: false
+  ema_decay: 0.9999
+  ema_update_rate: 1
+  loss_type: l2
+  

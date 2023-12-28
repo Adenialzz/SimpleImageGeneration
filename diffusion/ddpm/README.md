@@ -6,7 +6,7 @@ DDPM在CIFAR10上进行训练/采样的代码，带有diffusion实现的公式�
 
 #### 启动训练
 ```shell
-python train.py
+python train.py configs/ddpm_cifar10.yaml
 ```
 
 #### 采样生成
@@ -23,5 +23,6 @@ self.class_bias = nn.Embedding(num_classes, out_channels)
 
 
 参考实现：[abarankab/ddpm](https://github.com/abarankab/DDPM)
+
 扩展实现：[Stability-AI/ddpm](https://github.com/Stability-AI/stablediffusion/blob/main/ldm/models/diffusion/ddpm.py)
 
