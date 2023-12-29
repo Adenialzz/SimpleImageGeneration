@@ -83,9 +83,15 @@ class GaussianDiffusion(nn.Module):
         # x_{t-1} = (x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}} * \tilde{z}) * \sqrt{\frac{1}{\bar\alpha_t}}
         # 没有加方差，随机采样的噪声
         if use_ema:
-            return (x - extract(self.remove_noise_coeff, t, x.shape) * self.ema_model(x, t, y)) * extract(self.reciprocal_sqrt_alphas, t, x.shape)
+            return (
+                (x - extract(self.remove_noise_coeff, t, x.shape) * self.ema_model(x, t, y)) *
+                extract(self.reciprocal_sqrt_alphas, t, x.shape)
+            )
         else:
-            return (x - extract(self.remove_noise_coeff, t, x.shape) * self.model(x, t, y)) * extract(self.reciprocal_sqrt_alphas, t, x.shape)
+            return (
+                (x - extract(self.remove_noise_coeff, t, x.shape) * self.model(x, t, y)) *
+                extract(self.reciprocal_sqrt_alphas, t, x.shape)
+            )
         
     @torch.no_grad()
     def sample(self, batch_size, device, y=None, use_ema=True):
@@ -129,7 +135,8 @@ class GaussianDiffusion(nn.Module):
         # 这里的变量名x，我改成x_0了
         # x_t = \sqrt{\bar\alpha_t} * x_0 + \sqrt{1-\bar\alpha_t} * z
         return (
-            extract(self.sqrt_alphas_cumprod, t, x_0.shape) * x_0 + extract(self.sqrt_one_minus_alphas_cumprod, t, x_0.shape) * noise
+            extract(self.sqrt_alphas_cumprod, t, x_0.shape) * x_0 +
+            extract(self.sqrt_one_minus_alphas_cumprod, t, x_0.shape) * noise
         )
         
     def get_losses(self, x, t, y):

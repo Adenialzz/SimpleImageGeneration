@@ -47,11 +47,10 @@ def main():
             train_dataset = torchvision.datasets.CIFAR10(root=args.data.data_root, train=True, download=True, transform=build_transform(img_size=32))
             test_dataset = torchvision.datasets.CIFAR10(root=args.data.data_root, train=False, download=True, transform=build_transform(img_size=32))
         elif args.data.dataset.lower() == 'celeba':
-            # celeba_root = '/home/jeeves/JJ_Projects/data/celeba_hq_256'
             train_dataset = torchvision.datasets.ImageFolder(root=os.path.join(args.data.data_root, 'train'), transform=build_transform(img_size=args.data.img_size))
             test_dataset = torchvision.datasets.ImageFolder(root=os.path.join(args.data.data_root, 'val'), transform=build_transform(img_size=args.data.img_size))
         else:
-            raise ValueError(f"unspport dataset: {args.data.dataset}")
+            raise ValueError(f"unspported dataset: {args.data.dataset}")
             
         
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.training.batch_size, drop_last=True, num_workers=2)
@@ -85,9 +84,9 @@ def main():
                         test_loss += loss.item()
                 
                 samples = diffusion.sample(args.sampling.num_samples, args.config.device, y=torch.arange(10, device=args.config.device) if args.diffusion.use_labels else None)
-                samples = ((samples + 1) / 2).clip(0, 1)
+                # samples = ((samples + 1) / 2).clip(0, 1)  postprocess inside of diffusion.sample method
                 test_loss /= len(test_loader)
-                train_loss /= args.log_rate
+                train_loss /= args.config.eval_freq
                 
                 if args.config.log_to == 'wandb':
                     samples = samples.permute(0, 2, 3, 1).numpy()

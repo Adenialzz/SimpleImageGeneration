@@ -5,4 +5,4 @@ class RescaleChannels(object):  # 将像素值从范围 [0.0, 1.0] 转换为 [-1
     
 class UnrescaleChannels(object):
     def __call__(self, sample):
-        return (sample + 1) / 2
+        return ((sample + 1) / 2).clip(0, 1)

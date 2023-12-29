@@ -1,16 +1,17 @@
-
 config:
-  eval_freq: 500
-  checkpoint_freq: 500
-  log_dir: logs/ddpm_celeba_logs
   project_name: ddpm
-  data_root: data/celeba_hq_256
-  device: cuda
-  model_checkpoint: ""
-  optim_checkpoint: ""
+  log_to: tensorboard
+  log_dir: logs/ddpm_celeba_logs
+  device: cuda:1
+  
+  eval_freq: 1000
+  checkpoint_freq: 1000
+  model_checkpoint: null
+  optim_checkpoint: null
 
 data:
-  dataset: CIFAR10
+  dataset: celeba
+  data_root: data/celeba_hq_256
   img_size: 112
   img_channels: 3
   log_to: tensorboard
@@ -19,12 +20,10 @@ training:
   lr: 0.0002
   batch_size: 32
   iterations: 800000
-  use_labels: false
     
 sampling:
   num_samples: 16
   n_rows: 4
-
 
 diffusion: 
   base_channels: 128
@@ -34,7 +33,13 @@ diffusion:
   norm: gn
   dropout: 0.1
   activation: silu
-  attention_resolutions: [1,]
+  attention_resolutions: [1, ]
+  schedule: linear
+  num_timesteps: 1000
   schedule_low: 0.0001
   schedule_high: 0.02
-
+  use_labels: false
+  ema_decay: 0.9999
+  ema_update_rate: 1
+  loss_type: l2
+  

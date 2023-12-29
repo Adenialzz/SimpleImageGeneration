@@ -1,9 +1,8 @@
-
 config:
   project_name: ddpm
   log_to: tensorboard
-  log_dir: logs/ddpm_cifar10_logs
-  device: cuda
+  log_dir: logs/ddpm_cifar10_logs_mydiffusion
+  device: cuda:1
   
   eval_freq: 1000
   checkpoint_freq: 1000
