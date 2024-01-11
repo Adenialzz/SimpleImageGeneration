@@ -12,8 +12,8 @@ python train.py configs/ddpm_cifar10.yaml
 ```
 
 #### 采样生成
-```
-python sample.py --model_path ./logs/ddpm_logs/ddpm-ddpm-2023-12-27-14-17-iteration-2500-model.pth --save_dir sample_results
+```shell
+python sample.py configs/ddpm_cifar10.yaml
 ```
 
 #### TODO

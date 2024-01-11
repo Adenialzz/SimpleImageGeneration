@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import argparse
 import torchvision
@@ -10,7 +11,7 @@ def make_and_save_gif(frames_list, out_name='test.gif'):
     frame_one.save(out_name, format="GIF", append_images=frames_list, save_all=True, duration=100, loop=0)
 
 def main():
-    config_path = 'configs/ddpm_celeba.yaml'
+    config_path = sys.argv[1]
     yaml_dict = load_yaml(config_path)
     args = dict2namespace(yaml_dict)
     os.makedirs(args.sampling.save_dir, exist_ok=True)
