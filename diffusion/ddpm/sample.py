@@ -3,46 +3,40 @@ import torch
 import argparse
 import torchvision
 from PIL import Image
-from diffusion.ddpm.utils import diffusion_defaults, add_dict_to_argparser, get_diffusion_from_args
+from utils import get_diffusion_defaults, add_dict_to_argparser, build_diffusion, load_yaml, dict2namespace
 
 def make_and_save_gif(frames_list, out_name='test.gif'):
     frame_one = frames_list[0]
     frame_one.save(out_name, format="GIF", append_images=frames_list, save_all=True, duration=100, loop=0)
 
-def create_argparser():
-    defaults = dict(num_images=100, device='cuda:1')
-    defaults.update(diffusion_defaults())
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str)
-    parser.add_argument("--save_dir", type=str)
-    parser.add_argument("--viz_process", action='store_true', default=False)
-    add_dict_to_argparser(parser, defaults)
-    return parser
-
 def main():
-    args = create_argparser().parse_args()
-    os.makedirs(args.save_dir, exist_ok=True)
+    config_path = 'configs/ddpm_celeba.yaml'
+    yaml_dict = load_yaml(config_path)
+    args = dict2namespace(yaml_dict)
+    os.makedirs(args.sampling.save_dir, exist_ok=True)
+
+    print(args)
+    diffusion = build_diffusion(argparse.Namespace(**vars(args.diffusion), **vars(args.data))).to(args.config.device)
+
     try:
-        diffusion = get_diffusion_from_args(args).to(args.device)
-        state_dict =  torch.load(args.model_path, map_location='cpu')
+        state_dict =  torch.load(args.sampling.model_path, map_location='cpu')
         diffusion.load_state_dict(state_dict)
         
         frames_list = []
-        if args.use_labels:
-            images_per_class = args.num_images // 10
+        if args.diffusion.use_labels:
+            images_per_class = args.sampling.num_images // 10
             for label in range(10):
-                y = torch.ones(images_per_class, dtype=torch.long, device=args.device) * label
-                samples_processes = diffusion.sample_diffusion_sequence(images_per_class, args.device, y=y)
+                y = torch.ones(images_per_class, dtype=torch.long, device=args.config.device) * label
+                samples_processes = diffusion.sample_diffusion_sequence(images_per_class, args.config.device, y=y)
                 for process in samples_processes:
                     grid_sample = torchvision.utils.make_grid(process, nrow=4)
                     ndarr = grid_sample.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
                     img = Image.fromarray(ndarr)
                     frames_list.append(img)
-                make_and_save_gif(frames_list, 'sample_process.gif')
-                frames_list[-1].save("sample_results.png")
+                make_and_save_gif(frames_list, os.path.join(args.sampling.save_dir, 'sample_process.gif'))
+                frames_list[-1].save(os.path.join(args.sampling.save_dir, "sample_results.png"))
         else:
-            samples_processes = diffusion.sample_diffusion_sequence(args.num_images, args.device, y=None)
+            samples_processes = diffusion.sample_diffusion_sequence(args.sampling.num_samples, args.config.device, y=None)
             for process in samples_processes:
                 grid_sample = torchvision.utils.make_grid(process, nrow=4)
                 ndarr = grid_sample.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()

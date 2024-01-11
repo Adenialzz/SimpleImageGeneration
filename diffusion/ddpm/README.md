@@ -1,4 +1,6 @@
 
+**WARNING: This repo may has some bugs, the generation result is not good as [abarankab/ddpm](https://github.com/abarankab/DDPM). This BUG will be fixed in the near future.**
+
 # DDPM
 
 DDPM在CIFAR10上进行训练/采样的代码，带有diffusion实现的公式注释，参考：[DDPM详解](https://zhuanlan.zhihu.com/p/673353348)。

@@ -22,8 +22,11 @@ training:
   iterations: 800000
     
 sampling:
+  sampling_method: ddpm
   num_samples: 16
   n_rows: 4
+  model_path: logs/ddpm_celeba_logs/ddpm-ddpm-2024-01-02-14-43-iteration-54000-model.pth
+  save_dir: sample_images
 
 diffusion: 
   base_channels: 128
