@@ -1,0 +1,24 @@
+dataset_name: celeba
+data_root: ./data
+
+dim: 128
+n_embedding: 64
+img_size: 64
+img_channels: 3
+
+vqvae_epochs: 20
+gen_model_epochs: 50
+vqvae_batch_size: 64
+gen_model_batch_size: 128
+n_sample: 16
+
+alpha: 1  # weight for embedding loss
+beta: 0.25  # weight for commmitment loss
+lr: 0.0002
+
+pixelcnn_dim: 384
+pixelcnn_linear_dim: 256
+pixelcnn_n_blocks: 15
+
+device: cuda:1
+save_dir: celeba_work_dirs
