@@ -4,4 +4,5 @@
 **TODO: 使用本目录的采样方法对训练好的DDPM进行采样生成，观察效果**
 
 参考推导：[DDIM详解](https://zhuanlan.zhihu.com/p/674142410)
+
 参考实现：DDIM Official Repo: [ermongroup/ddim](https://github.com/ermongroup/ddim)

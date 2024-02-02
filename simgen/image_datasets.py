@@ -52,11 +52,12 @@ class CelebaDataset(Dataset):
         
         self.img_size = img_size
         self.img_channels = 3
-        self.all_image_paths = glob(f"{data_root}/**/*.jpg", recursive=True)
-        random.shuffle(self.all_image_paths)
+        self.image_paths = glob(f"{data_root}/**/*.jpg", recursive=True)
+        random.shuffle(self.image_paths)
+        self.transform = get_default_transform(self.img_size)
     
     def __len__(self):
-        return len(self.all_image_paths)
+        return len(self.image_paths)
     
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
