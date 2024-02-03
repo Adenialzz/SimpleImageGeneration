@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from models.vqvae import VQVAE
 from models.pixelcnn import PixelCNNWithEmbedding
 from loss import VQVAELoss
-from simgen.utils import load_yaml, dict2namespace, time_cost
+from simgen.utils import load_yaml, dict2namespace, format_duration
 from simgen.image_datasets import get_dataset_class
 
 def train_vqvae(cfg, model: VQVAE, dataloader: DataLoader):
@@ -40,7 +40,7 @@ def train_vqvae(cfg, model: VQVAE, dataloader: DataLoader):
         toc = time.time()
         save_path = osp.join(cfg.save_dir, 'vqvae.pth')
         torch.save(model.state_dict(), save_path)
-        print(f'epoch {e} loss: {total_loss} elapsed {time_cost(toc - tic)}, model updated at {save_path}')
+        print(f'epoch {e} loss: {total_loss} elapsed {format_duration(toc - tic)}, model updated at {save_path}')
     print('All epochs for training vqvae done')
 
 def train_generative_model(cfg, vqvae, model, dataloader):
@@ -69,7 +69,7 @@ def train_generative_model(cfg, vqvae, model, dataloader):
         toc = time.time()
         save_path = osp.join(cfg.save_dir, 'gen_model.pth')
         torch.save(model.state_dict(), save_path)
-        print(f'epoch {e} loss: {total_loss} elapsed {time_cost(toc - tic)}')
+        print(f'epoch {e} loss: {total_loss} elapsed {format_duration(toc - tic)}')
     print('All epochs for training generative model done')
 
 

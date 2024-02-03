@@ -2,14 +2,14 @@ import os
 from tqdm import tqdm
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from torchvision import utils as vutils
 from models.discriminator import Discriminator
 from models.vqgan import VQGAN
 from lpips import LPIPS
-from utils import weights_init
 from simgen.image_datasets import get_dataset_class
-from torch.utils.data import DataLoader
+from simgen.utils import weights_init
 
 class TrainVQGAN:
     def __init__(self, args):
