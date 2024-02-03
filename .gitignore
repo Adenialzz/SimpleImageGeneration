@@ -22,6 +22,9 @@ data/
 *.pt
 *.pth
 *.ckpt
+*checkpoint*/
 
 # results dir
 *results*/
+*work_dir*/
+
