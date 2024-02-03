@@ -33,7 +33,7 @@ class MnistDataset(Dataset):
 class CifarDataset(Dataset):
     def __init__(self, data_root, img_size=32):
         super().__init__()
-        self._cifar = MNIST(data_root, train=True, download=True)
+        self._cifar = CIFAR10(data_root, train=True, download=True)
         self.img_size = img_size
         self.img_channels = 3
         self.transform = get_default_transform(self.img_size)
@@ -42,7 +42,7 @@ class CifarDataset(Dataset):
         return len(self._cifar)
     
     def __getitem__(self, idx):
-        img, label = self._mnist[idx]
+        img, label = self._cifar[idx]
         img_tensor = self.transform(img)
         return img_tensor
 

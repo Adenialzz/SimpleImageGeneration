@@ -78,9 +78,9 @@ def reconstruct(cfg, model, x):
     model.eval()
     with torch.no_grad():
         x_hat, _, _ = model(x)
-    n = x.shape[0]
-    n1 = int(n**0.5)
-    x_cat = torch.concat((x, x_hat), 3)
+    bs = x.shape[0]
+    n1 = int(bs ** 0.5)
+    x_cat = torch.concat((x, x_hat), dim=3)
     x_cat = einops.rearrange(x_cat, '(n1 n2) c h w -> (n1 h) (n2 w) c', n1=n1)
     x_cat = (x_cat.clip(0, 1) * 255).cpu().numpy().astype(np.uint8)
     if cfg.dataset_name.lower() == 'celeb':
