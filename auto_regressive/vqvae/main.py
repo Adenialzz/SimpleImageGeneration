@@ -83,8 +83,6 @@ def reconstruct(cfg, model, x):
     x_cat = torch.concat((x, x_hat), dim=3)
     x_cat = einops.rearrange(x_cat, '(n1 n2) c h w -> (n1 h) (n2 w) c', n1=n1)
     x_cat = (x_cat.clip(0, 1) * 255).cpu().numpy().astype(np.uint8)
-    if cfg.dataset_name.lower() == 'celeb':
-        x_cat = cv2.cvtColor(x_cat, cv2.COLOR_RGB2BGR)
     save_path = osp.join(cfg.save_dir, f'vqvae_reconstruct_{cfg.dataset_name}.jpg')
     cv2.imwrite(save_path, x_cat)
 
@@ -115,8 +113,6 @@ def sample_imgs(cfg, vqvae, gen_model):
                             n1=int(cfg.n_sample ** 0.5))
 
     imgs = imgs.detach().cpu().numpy().astype(np.uint8)
-    if cfg.dataset_name.lower() == 'celeba':
-        imgs = cv2.cvtColor(imgs, cv2.COLOR_RGB2BGR)
 
     # cv2.imwrite(f'work_dirs/vqvae_sample_{cfg.dataset_name}.jpg', imgs)
     save_path = osp.join(cfg.save_dir, f"gen_model_vqvae_sample_{cfg.dataset_name}.jpg")
