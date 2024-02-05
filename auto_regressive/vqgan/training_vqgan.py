@@ -19,8 +19,6 @@ class TrainVQGAN:
         self.perceptual_loss = LPIPS().eval().to(device=args.device)
         self.opt_vq, self.opt_disc = self.configure_optimizers(args)
 
-        self.prepare_training()
-
         self.train(args)
 
     def configure_optimizers(self, args):
@@ -30,20 +28,13 @@ class TrainVQGAN:
             list(self.vqgan.codebook.parameters()) +
             list(self.vqgan.quant_conv.parameters()) +
             list(self.vqgan.post_quant_conv.parameters()),
-            lr=args.lr, eps=1e-08, betas=(args.beta1, args.beta2)
+            lr=args.lr, eps=1e-08
         )
-        opt_disc = torch.optim.Adam(self.discriminator.parameters(),
-                                    lr=args.lr, eps=1e-08, betas=(args.beta1, args.beta2))
+        opt_disc = torch.optim.Adam(self.discriminator.parameters(), lr=args.lr, eps=1e-08)
 
         return opt_vq, opt_disc
 
-    @staticmethod
-    def prepare_training():
-        os.makedirs("results", exist_ok=True)
-        os.makedirs("checkpoints", exist_ok=True)
-
     def train(self, args):
-        # train_dataset = load_data(args)
         dataset = get_dataset_class(args.dataset_name)(args.data_root, img_size=args.img_size)
         print(f"num samples = {len(dataset)} in {args.dataset_name}")
         data_loader = DataLoader(dataset, batch_size=args.batch_size, num_workers=8)
@@ -51,17 +42,17 @@ class TrainVQGAN:
         for epoch in range(args.epochs):
             with tqdm(range(len(data_loader))) as pbar:
                 for i, imgs in zip(pbar, data_loader):
-                    imgs = imgs.to(device=args.device)
-                    decoded_images, _, q_loss = self.vqgan(imgs)
-
-                    disc_real = self.discriminator(imgs)
-                    disc_fake = self.discriminator(decoded_images)
-
                     total_step = epoch * steps_per_epoch + i
                     if total_step < args.disc_start:
                         disc_factor = 0.
                     else:
                         disc_factor = args.disc_factor
+
+                    imgs = imgs.to(device=args.device)
+                    decoded_images, _, q_loss = self.vqgan(imgs)
+
+                    disc_real = self.discriminator(imgs)
+                    disc_fake = self.discriminator(decoded_images)
 
                     perceptual_loss = self.perceptual_loss(imgs, decoded_images)
                     rec_loss = torch.abs(imgs - decoded_images)
@@ -88,7 +79,6 @@ class TrainVQGAN:
                     if i % 50 == 0:
                         with torch.no_grad():
                             real_fake_images = torch.cat((imgs[:4], decoded_images[:4]))
-                            # real_fake_images = torch.cat((imgs.add(1).mul(0.5)[:4], decoded_images.add(1).mul(0.5)[:4]))
                             vutils.save_image(real_fake_images, os.path.join("results", f"ep{epoch}_step{i}.jpg"), nrow=4)
 
                     pbar.set_postfix(
@@ -103,6 +93,8 @@ if __name__ == '__main__':
     from simgen.utils import load_yaml, dict2namespace
     import sys
     config_path = sys.argv[1]
+    os.makedirs("results", exist_ok=True)
+    os.makedirs("checkpoints", exist_ok=True)
     args = load_yaml(config_path)
     args = dict2namespace(args)
 
