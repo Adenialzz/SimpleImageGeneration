@@ -46,7 +46,7 @@ class CifarDataset(Dataset):
         img_tensor = self.transform(img)
         return img_tensor
 
-class CelebaDataset(Dataset):
+class ImageFolderDataset(Dataset):
     def __init__(self, data_root, img_size=256):
         super().__init__()
         
@@ -68,13 +68,16 @@ class CelebaDataset(Dataset):
 
 
 def get_dataset_class(dataset_name):
-    assert dataset_name.lower() in ('mnist', 'cifar10', 'celeba'), f"dataset name = {dataset_name} is unknown, only mnist, cifar10, celeba supported"
+    supported_dataset_names = ['mnist', 'cifar10', 'flowers', 'celeba']
+    assert dataset_name.lower() in supported_dataset_names, f"dataset name = {dataset_name} is unknown, only {', '.join(supported_dataset_names)} supported"
     if dataset_name.lower() == 'mnist':
         return MnistDataset
     elif dataset_name.lower() == 'cifar10':
         return CifarDataset
     elif dataset_name.lower() == 'celeba':
-        return CelebaDataset
+        return ImageFolderDataset
+    elif dataset_name.lower() == 'flowers':
+        return ImageFolderDataset
 
 if __name__ == '__main__':
     name = 'mnist'
