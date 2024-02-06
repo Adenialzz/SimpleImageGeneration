@@ -93,18 +93,6 @@ class NonLocalBlock(nn.Module):
 
         A = torch.bmm(v, attn)
         A = A.reshape(b, c, h, w)
-        A = self.proj_out(A)
+        # A = self.proj_out(A)
 
         return x + A
-
-
-
-
-
-
-
-
-
-
-
-

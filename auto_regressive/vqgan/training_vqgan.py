@@ -28,9 +28,9 @@ class TrainVQGAN:
             list(self.vqgan.codebook.parameters()) +
             list(self.vqgan.quant_conv.parameters()) +
             list(self.vqgan.post_quant_conv.parameters()),
-            lr=args.lr, eps=1e-08
+            lr=args.lr, eps=1e-08, betas=(args.beta1, args.beta2)
         )
-        opt_disc = torch.optim.Adam(self.discriminator.parameters(), lr=args.lr, eps=1e-08)
+        opt_disc = torch.optim.Adam(self.discriminator.parameters(), lr=args.lr, eps=1e-08, betas=(args.beta1, args.beta2))
 
         return opt_vq, opt_disc
 
