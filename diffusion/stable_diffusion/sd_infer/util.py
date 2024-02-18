@@ -11,8 +11,7 @@ def get_time_embedding(timestep):
     return torch.cat([torch.cos(x), torch.sin(x)], dim=-1)
 
 def get_file_path(filename, url=None):
-    module_location = os.path.dirname(os.path.abspath(__file__))
-    parent_location = os.path.dirname(module_location)
+    parent_location = os.path.dirname(os.path.abspath(__file__))
     file_location = os.path.join(parent_location, "data", filename)
     return file_location
 
